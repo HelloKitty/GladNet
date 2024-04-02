@@ -33,7 +33,7 @@
   <ItemGroup>
     <PackageReference Include="Common.Logging" Version="3.4.1" />
     <PackageReference Include="Nito.AsyncEx" Version="5.1.0" />
-    <PackageReference Include="Pipelines.Sockets.Unofficial" Version="2.2.2" targetFramework="netstandard2.0" />
+    <PackageReference Include="Pipelines.Sockets.Unofficial" Version="2.2.8" targetFramework="netstandard2.0" />
     <PackageReference Include="System.IO.Pipelines" Version="6.0.3" />
   </ItemGroup>
 
