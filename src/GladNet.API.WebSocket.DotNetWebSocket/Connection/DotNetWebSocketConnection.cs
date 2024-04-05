@@ -4,9 +4,17 @@ using System.Net.WebSockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Nito.AsyncEx;
 
 namespace GladNet
 {
+	// See: https://github.com/dotnet/corefx/blob/d6b11250b5113664dd3701c25bdf9addfacae9cc/src/Common/src/System/Net/WebSockets/ManagedWebSocket.cs#L22-L28
+	// for threadsafety restrictions
+	// - It's acceptable to call ReceiveAsync and SendAsync in parallel.  One of each may run concurrently.
+	// - It's acceptable to have a pending ReceiveAsync while CloseOutputAsync or CloseAsync is called.
+	// - Attemping to invoke any other operations in parallel may corrupt the instance.  Attempting to invoke
+	//   a send operation while another is in progress or a receive operation while another is in progress will
+	//  result in an exception.
 	/// <summary>
 	/// DotNet <see cref="WebSocket"/> implementation of the <see cref="IWebSocketConnection"/>.
 	/// </summary>
@@ -23,6 +31,8 @@ namespace GladNet
 		/// <inheritdoc />
 		public WebSocketCloseStatus? CloseStatus => Connection.CloseStatus;
 
+		private AsyncLock SyncObj { get; } = new();
+
 		/// <summary>
 		/// Creates a new <see cref="DotNetWebSocketConnection"/> that implements <see cref="IWebSocketConnection"/>
 		/// adapting the provided <see cref="WebSocket"/> connection.
@@ -34,9 +44,11 @@ namespace GladNet
 		}
 
 		/// <inheritdoc />
-		public Task CloseAsync(WebSocketCloseStatus closeStatus, string statusDescription, CancellationToken cancellationToken = default)
+		public async Task CloseAsync(WebSocketCloseStatus closeStatus, string statusDescription, CancellationToken cancellationToken = default)
 		{
-			return Connection.CloseAsync(closeStatus, statusDescription, cancellationToken);
+			// Because Close and Send aren't threadsafe at the same time we must lock
+			using(await SyncObj.LockAsync())
+				await Connection.CloseAsync(closeStatus, statusDescription, cancellationToken);
 		}
 
 		/// <inheritdoc />
@@ -72,13 +84,15 @@ namespace GladNet
 				bufferSegment = new ArraySegment<byte>(buffer, bufferSegment.Offset + result.Count, bufferSegment.Count - result.Count);
 
 			} while(!token.IsCancellationRequested
-			        && Connection.State == WebSocketState.Open);
+					&& Connection.State == WebSocketState.Open);
 		}
 
 		/// <inheritdoc />
 		public async Task SendAsync(ArraySegment<byte> buffer, bool endMessage, CancellationToken token = default)
 		{
-			await Connection.SendAsync(buffer, WebSocketMessageType.Binary, endMessage, token);
+			// Because Close and Send aren't threadsafe at the same time we must lock
+			using(await SyncObj.LockAsync())
+				await Connection.SendAsync(buffer, WebSocketMessageType.Binary, endMessage, token);
 		}
 
 		public void Dispose()
