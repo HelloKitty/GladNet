@@ -12,7 +12,7 @@
     <RepositoryUrl>https://github.com/HelloKitty/GladNet3</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageTags>GladNet Emulation Emulator WoW PSO Network Unity3D Network Networking Netlib GladNet4</PackageTags>
-    <LangVersion>8.0</LangVersion>
+    <LangVersion>latest</LangVersion>
     <PackageId>GladNet.API.WebSocket.DotNetWebSocket</PackageId>
     <Version>4.7.34</Version>
   </PropertyGroup>
