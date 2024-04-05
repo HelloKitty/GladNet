@@ -13,7 +13,7 @@
     <RepositoryType>git</RepositoryType>
     <PackageTags>GladNet Emulation Emulator WoW PSO Network Unity3D Network Networking Netlib GladNet4</PackageTags>
     <PackageId>GladNet.API.AutoFac</PackageId>
-    <Version>4.7.34</Version>
+    <Version>4.7.35</Version>
   </PropertyGroup>
 
   <PropertyGroup>

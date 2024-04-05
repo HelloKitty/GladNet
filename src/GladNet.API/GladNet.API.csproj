@@ -14,7 +14,7 @@
     <PackageTags>GladNet Emulation Emulator WoW PSO Network Unity3D Network Networking Netlib GladNet4</PackageTags>
     <LangVersion>8.0</LangVersion>
     <PackageId>GladNet.API</PackageId>
-    <Version>4.7.34</Version>
+    <Version>4.7.35</Version>
   </PropertyGroup>
 
   <PropertyGroup>
