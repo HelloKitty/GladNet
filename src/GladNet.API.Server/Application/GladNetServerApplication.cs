@@ -113,63 +113,75 @@ namespace GladNet
 			{
 				try
 				{
-					await Task.WhenAny(readTask, writeTask);
-
-					//If ANY read or write task finishes then the network should stop reading
-					//by canceling the session cancel token we should cancel any remaining network task
-					combinedTokenSource.Cancel();
-
-					//Now we should wait until both tasks have finished completely, after canceling
-					await Task.WhenAll(readTask, writeTask);
-				}
-				catch(Exception e)
-				{
-					//Suppress this exception, we have critical deconstruction code to run.
-					if(Logger.IsErrorEnabled)
-						Logger.Error($"Session: {clientSession.Details.ConnectionId} encountered critical failure in awaiting network task. Error: {e}");
+					// Important that NO MATTER WHAT even if some cancel logic fails in this call that 
+					// OnManagedSessionEnded is invoked
+					await AwaitManagedReadWriteTasksAsync(clientSession, readTask, writeTask, combinedTokenSource, writeCancelTokenSource, readCancelTokenSource);
 				}
 				finally
 				{
-					if(!combinedTokenSource.IsCancellationRequested)
-						combinedTokenSource.Cancel();
-
-					combinedTokenSource.Dispose();
-
-					//Also all read/write tasks should be cancelled and disposed of by this point.
-					//BUT we cannot know if they're cancelled, so dispose them here instead
-					writeCancelTokenSource.Dispose();
-					readCancelTokenSource.Dispose();
-				}
-
-				if(Logger.IsDebugEnabled)
-					Logger.Debug($"Session: {clientSession.Details.ConnectionId} Stopped Network Read/Write.");
-
-				try
-				{
-					//Fire off to anyone interested in managed session ending. We should do this before we fully dispose it and remove it from the session collection.
-					OnManagedSessionEnded?.Invoke(this, new ManagedSessionContextualEventArgs<TManagedSessionType>(clientSession));
-				}
-				catch(Exception e)
-				{
-					if(Logger.IsErrorEnabled)
-						Logger.Error($"Failed Session: {clientSession.Details.ConnectionId} ended event. Reason: {e}");
-				}
-				finally
-				{
-					Sessions.TryRemove(clientSession.Details.ConnectionId, out _);
+					if (Logger.IsDebugEnabled)
+						Logger.Debug($"Session: {clientSession.Details.ConnectionId} Stopped Network Read/Write.");
 
 					try
 					{
-						clientSession.Dispose();
+						//Fire off to anyone interested in managed session ending. We should do this before we fully dispose it and remove it from the session collection.
+						OnManagedSessionEnded?.Invoke(this, new ManagedSessionContextualEventArgs<TManagedSessionType>(clientSession));
 					}
 					catch(Exception e)
 					{
-						if(Logger.IsErrorEnabled)
-							Logger.Error($"Encountered error in Client: {clientSession.Details.ConnectionId} session disposal. Error: {e}");
-						throw;
+						if (Logger.IsErrorEnabled)
+							Logger.Error($"Failed Session: {clientSession.Details.ConnectionId} ended event. Reason: {e}");
+					}
+					finally
+					{
+						Sessions.TryRemove(clientSession.Details.ConnectionId, out _);
+
+						try
+						{
+							clientSession.Dispose();
+						}
+						catch(Exception e)
+						{
+							if(Logger.IsErrorEnabled)
+								Logger.Error($"Encountered error in Client: {clientSession.Details.ConnectionId} session disposal. Error: {e}");
+							throw;
+						}
 					}
 				}
 			}, token);
+		}
+
+		private async Task AwaitManagedReadWriteTasksAsync(TManagedSessionType clientSession, Task readTask, Task writeTask, CancellationTokenSource combinedTokenSource, CancellationTokenSource writeCancelTokenSource, CancellationTokenSource readCancelTokenSource)
+		{
+			try
+			{
+				await Task.WhenAny(readTask, writeTask);
+
+				//If ANY read or write task finishes then the network should stop reading
+				//by canceling the session cancel token we should cancel any remaining network task
+				combinedTokenSource.Cancel();
+
+				//Now we should wait until both tasks have finished completely, after canceling
+				await Task.WhenAll(readTask, writeTask);
+			}
+			catch (Exception e)
+			{
+				//Suppress this exception, we have critical deconstruction code to run.
+				if (Logger.IsErrorEnabled)
+					Logger.Error($"Session: {clientSession.Details.ConnectionId} encountered critical failure in awaiting network task. Error: {e}");
+			}
+			finally
+			{
+				if (!combinedTokenSource.IsCancellationRequested)
+					combinedTokenSource.Cancel();
+
+				combinedTokenSource.Dispose();
+
+				//Also all read/write tasks should be cancelled and disposed of by this point.
+				//BUT we cannot know if they're cancelled, so dispose them here instead
+				writeCancelTokenSource.Dispose();
+				readCancelTokenSource.Dispose();
+			}
 		}
 
 		private async Task StartSessionNetworkThreadAsync(SessionDetails details, Task task, CancellationTokenSource combinedTokenSource, string taskName)
