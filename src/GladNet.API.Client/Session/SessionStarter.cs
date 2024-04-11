@@ -48,27 +48,7 @@ namespace GladNet
 						if(Logger.IsDebugEnabled)
 							Logger.Debug($"Write Fault: {readTask.Exception}");
 
-					try
-					{
-						await session.ConnectionService.DisconnectAsync();
-					}
-					catch (Exception e)
-					{
-						if (Logger.IsErrorEnabled)
-							Logger.Error($"Session: {session.Details.ConnectionId} was open but failed to disconnect. Reason: {e}");
-					}
-					finally
-					{
-						try
-						{
-							session.Dispose();
-						}
-						catch (Exception e)
-						{
-							if (Logger.IsErrorEnabled)
-								Logger.Error($"Session: {session.Details.ConnectionId} failed to dispose. Reason: {e}");
-						}
-					}
+					await TryGracefulDisconnectAsync(session);
 				}
 
 				if (Logger.IsDebugEnabled)
@@ -97,6 +77,31 @@ namespace GladNet
 					}
 				}
 			}, token);
+		}
+
+		private async Task TryGracefulDisconnectAsync(TSessionType session)
+		{
+			try
+			{
+				await session.ConnectionService.DisconnectAsync();
+			}
+			catch (Exception e)
+			{
+				if (Logger.IsErrorEnabled)
+					Logger.Error($"Session: {session.Details.ConnectionId} was open but failed to disconnect. Reason: {e}");
+			}
+			finally
+			{
+				try
+				{
+					session.Dispose();
+				}
+				catch (Exception e)
+				{
+					if (Logger.IsErrorEnabled)
+						Logger.Error($"Session: {session.Details.ConnectionId} failed to dispose. Reason: {e}");
+				}
+			}
 		}
 
 		public void Start(TSessionType session, CancellationToken token = default)

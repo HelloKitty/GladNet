@@ -102,31 +102,10 @@ namespace GladNet
 			{
 				try
 				{
-					await clientSession.ConnectionService.DisconnectAsync();
-				}
-				catch(Exception e)
-				{
-					if(Logger.IsErrorEnabled)
-						Logger.Error($"Session: {clientSession.Details.ConnectionId} was open but failed to disconnect. Reason: {e}");
-				}
-				finally
-				{
-					try
-					{
-						clientSession.Dispose();
-					}
-					catch(Exception e)
-					{
-						if (Logger.IsErrorEnabled)
-							Logger.Error($"Session: {clientSession.Details.ConnectionId} failed to dispose. Reason: {e}");
-					}
-				}
-
-				try
-				{
 					// Important that NO MATTER WHAT even if some cancel logic fails in this call that 
 					// OnManagedSessionEnded is invoked
 					await AwaitManagedReadWriteTasksAsync(clientSession, readTask, writeTask, token);
+					await TryGracefulDisconnectionAsync(clientSession);
 				}
 				finally
 				{
@@ -160,6 +139,31 @@ namespace GladNet
 					}
 				}
 			}, token);
+		}
+
+		private async Task TryGracefulDisconnectionAsync(TManagedSessionType clientSession)
+		{
+			try
+			{
+				await clientSession.ConnectionService.DisconnectAsync();
+			}
+			catch (Exception e)
+			{
+				if (Logger.IsErrorEnabled)
+					Logger.Error($"Session: {clientSession.Details.ConnectionId} was open but failed to disconnect. Reason: {e}");
+			}
+			finally
+			{
+				try
+				{
+					clientSession.Dispose();
+				}
+				catch (Exception e)
+				{
+					if (Logger.IsErrorEnabled)
+						Logger.Error($"Session: {clientSession.Details.ConnectionId} failed to dispose. Reason: {e}");
+				}
+			}
 		}
 
 		private async Task AwaitManagedReadWriteTasksAsync(TManagedSessionType clientSession, Task readTask, Task writeTask, CancellationToken token)
