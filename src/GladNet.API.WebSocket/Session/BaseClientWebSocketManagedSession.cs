@@ -67,58 +67,21 @@ namespace GladNet
 		/// <inheritdoc />
 		public override async Task StartListeningAsync(CancellationToken token = default)
 		{
-			//We override this to add some SocketConnection handling on finishing.
-			try
-			{
-				await base.StartListeningAsync(token);
-				await Connection.CloseAsync(WebSocketCloseStatus.NormalClosure, String.Empty, token);
-			}
-			catch (TaskCanceledException e)
-			{
-				await Connection.CloseAsync(WebSocketCloseStatus.NormalClosure, $"{nameof(TaskCanceledException)}", token);
-				return;
-			}
-			catch (Exception e)
-			{
-				await Connection.CloseAsync(WebSocketCloseStatus.NormalClosure, $"Error: {e.GetType().Name}", token);
-				throw;
-			}
-			finally
-			{
-				Connection.Dispose();
-			}
+			await base.StartListeningAsync(token);
 		}
 
 		/// <inheritdoc />
 		public override async Task StartWritingAsync(CancellationToken token = default)
 		{
-			try
+			while (!token.IsCancellationRequested)
 			{
-				while (!token.IsCancellationRequested)
-				{
-					//Dequeue from the outgoing message queue and send through the send service.
-					TPayloadWriteType payload = await MessageService.OutgoingMessageQueue.DequeueAsync(token);
-					SendResult result = await MessageService.MessageInterface.SendMessageAsync(payload, token);
+				//Dequeue from the outgoing message queue and send through the send service.
+				TPayloadWriteType payload = await MessageService.OutgoingMessageQueue.DequeueAsync(token);
+				SendResult result = await MessageService.MessageInterface.SendMessageAsync(payload, token);
 
-					//TODO: Add logging!
-					if (result != SendResult.Sent && result != SendResult.Enqueued)
-						return;
-				}
-			}
-			catch(TaskCanceledException e)
-			{
-				//Consider a cancel a graceful complete
-				await Connection.CloseAsync(WebSocketCloseStatus.NormalClosure, $"{nameof(TaskCanceledException)}", token);
-				return;
-			}
-			catch(Exception e)
-			{
-				await Connection.CloseAsync(WebSocketCloseStatus.NormalClosure, $"Error: {e.GetType().Name}", token);
-				throw;
-			}
-			finally
-			{
-				Connection.Dispose();
+				//TODO: Add logging!
+				if (result != SendResult.Sent && result != SendResult.Enqueued)
+					return;
 			}
 		}
 	}

@@ -31,7 +31,6 @@ namespace GladNet
 		public async Task DisconnectAsync()
 		{
 			await Connection.CloseAsync(WebSocketCloseStatus.NormalClosure, String.Empty, CancellationToken.None);
-			Connection.Dispose();
 		}
 
 		//TODO: This is kind of stupid to even implement. This should NEVER be called on serverside!

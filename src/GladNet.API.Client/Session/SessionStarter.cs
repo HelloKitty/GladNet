@@ -20,32 +20,14 @@ namespace GladNet
 
 		public async Task StartAsync(TSessionType session, CancellationToken token = default)
 		{
-			CancellationToken sessionCancelToken = new CancellationToken(false);
-			CancellationTokenSource combinedTokenSource = CancellationTokenSource.CreateLinkedTokenSource(token, sessionCancelToken);
-
-			//To avoid sharing the cancel token source and dealing with race conditions involved in it being disposed we create a seperate
-			//one for each task.
-			CancellationToken readCancelToken = new CancellationToken(false);
-			CancellationTokenSource readCancelTokenSource = CancellationTokenSource.CreateLinkedTokenSource(combinedTokenSource.Token, readCancelToken);
-
-			CancellationToken writeCancelToken = new CancellationToken(false);
-			CancellationTokenSource writeCancelTokenSource = CancellationTokenSource.CreateLinkedTokenSource(combinedTokenSource.Token, writeCancelToken);
-
-			Task writeTask = Task.Run(async () => await StartSessionNetworkThreadAsync(session.Details, session.StartWritingAsync(writeCancelTokenSource.Token), writeCancelTokenSource, "Write"), token);
-			Task readTask = Task.Run(async () => await StartSessionNetworkThreadAsync(session.Details, session.StartListeningAsync(readCancelTokenSource.Token), readCancelTokenSource, "Read"), token);
+			Task writeTask = Task.Run(async () => await StartSessionNetworkThreadAsync(session.Details, session.StartWritingAsync(token), "Write"), token);
+			Task readTask = Task.Run(async () => await StartSessionNetworkThreadAsync(session.Details, session.StartListeningAsync(token), "Read"), token);
 
 			await Task.Run(async () =>
 			{
 				try
 				{
 					await Task.WhenAny(writeTask, readTask);
-
-					//If ANY read or write task finishes then the network should stop reading
-					//by canceling the session cancel token we should cancel any remaining network task
-					combinedTokenSource.Cancel();
-
-					//Now we should wait until both tasks have finished completely, after canceling
-					await Task.WhenAll(writeTask, readTask);
 				}
 				catch(Exception e)
 				{
@@ -66,18 +48,30 @@ namespace GladNet
 						if(Logger.IsDebugEnabled)
 							Logger.Debug($"Write Fault: {readTask.Exception}");
 
-					if(!combinedTokenSource.IsCancellationRequested)
-						combinedTokenSource.Cancel();
-
-					combinedTokenSource.Dispose();
-
-					//Also all read/write tasks should be cancelled and disposed of by this point.
-					//BUT we cannot know if they're cancelled, so dispose them here instead
-					writeCancelTokenSource.Dispose();
-					readCancelTokenSource.Dispose();
+					try
+					{
+						await session.ConnectionService.DisconnectAsync();
+					}
+					catch (Exception e)
+					{
+						if (Logger.IsErrorEnabled)
+							Logger.Error($"Session: {session.Details.ConnectionId} was open but failed to disconnect. Reason: {e}");
+					}
+					finally
+					{
+						try
+						{
+							session.Dispose();
+						}
+						catch (Exception e)
+						{
+							if (Logger.IsErrorEnabled)
+								Logger.Error($"Session: {session.Details.ConnectionId} failed to dispose. Reason: {e}");
+						}
+					}
 				}
 
-				if(Logger.IsDebugEnabled)
+				if (Logger.IsDebugEnabled)
 					Logger.Debug($"Session: {session.Details.ConnectionId} Stopped Network Read/Write.");
 
 				try
@@ -113,7 +107,7 @@ namespace GladNet
 #pragma warning restore 4014
 		}
 
-		private async Task StartSessionNetworkThreadAsync(SessionDetails details, Task task, CancellationTokenSource combinedTokenSource, string taskName)
+		private async Task StartSessionNetworkThreadAsync(SessionDetails details, Task task, string taskName)
 		{
 			if(details == null) throw new ArgumentNullException(nameof(details));
 			if(task == null) throw new ArgumentNullException(nameof(task));
@@ -129,13 +123,7 @@ namespace GladNet
 			}
 			finally
 			{
-				//It's important that if we arrive at this point WITHOUT canceling somehow
-				//then we should cancel the combined source. Otherwise anything else depending on this
-				//token won't actually cancel and it likely SHOULD
-				if(!combinedTokenSource.IsCancellationRequested)
-					combinedTokenSource.Cancel();
 
-				combinedTokenSource.Dispose();
 			}
 		}
 
