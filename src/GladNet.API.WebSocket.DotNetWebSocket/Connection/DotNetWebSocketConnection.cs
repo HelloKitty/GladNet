@@ -33,6 +33,8 @@ namespace GladNet
 
 		private AsyncLock SyncObj { get; } = new();
 
+		private bool IsCloseRequested = false;
+
 		/// <summary>
 		/// Creates a new <see cref="DotNetWebSocketConnection"/> that implements <see cref="IWebSocketConnection"/>
 		/// adapting the provided <see cref="WebSocket"/> connection.
@@ -47,8 +49,14 @@ namespace GladNet
 		public async Task CloseAsync(WebSocketCloseStatus closeStatus, string statusDescription, CancellationToken cancellationToken = default)
 		{
 			// Because Close and Send aren't threadsafe at the same time we must lock
-			using(await SyncObj.LockAsync())
+			using (await SyncObj.LockAsync())
+			{
+				if (IsCloseRequested)
+					return;
+
+				IsCloseRequested = true;
 				await Connection.CloseAsync(closeStatus, statusDescription, cancellationToken);
+			}
 		}
 
 		/// <inheritdoc />
@@ -83,13 +91,17 @@ namespace GladNet
 				// Move the segment forward
 				bufferSegment = new ArraySegment<byte>(buffer, bufferSegment.Offset + result.Count, bufferSegment.Count - result.Count);
 
-			} while(!token.IsCancellationRequested
+			} while(!IsCloseRequested 
+			        && !token.IsCancellationRequested
 					&& Connection.State == WebSocketState.Open);
 		}
 
 		/// <inheritdoc />
 		public async Task SendAsync(ArraySegment<byte> buffer, bool endMessage, CancellationToken token = default)
 		{
+			if (IsCloseRequested)
+				return;
+
 			// Because Close and Send aren't threadsafe at the same time we must lock
 			using(await SyncObj.LockAsync())
 				await Connection.SendAsync(buffer, WebSocketMessageType.Binary, endMessage, token);
