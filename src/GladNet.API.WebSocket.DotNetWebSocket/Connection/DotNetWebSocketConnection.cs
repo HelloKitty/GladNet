@@ -51,7 +51,8 @@ namespace GladNet
 			// Because Close and Send aren't threadsafe at the same time we must lock
 			using (await SyncObj.LockAsync())
 			{
-				if (IsCloseRequested)
+				// Sometimes we hung on Aborted it seemed like.
+				if (IsCloseRequested || Connection.State == WebSocketState.Aborted)
 					return;
 
 				IsCloseRequested = true;
