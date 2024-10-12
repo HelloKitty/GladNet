@@ -1,0 +1,45 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <Authors>Andrew Blakely, HelloKitty</Authors>
+    <Company />
+    <Product>GladNet</Product>
+    <Description>GladNet (Glader's Library for Advanced Development of Network Emulation Technologies) server implementation of the .NET TCP Server (TcpListener) for server emulation.</Description>
+    <Copyright>Andrew Blakely</Copyright>
+    <PackageLicenseUrl>https://github.com/HelloKitty/GladNet3/blob/master/LICENSE</PackageLicenseUrl>
+    <PackageProjectUrl>https://github.com/HelloKitty/GladNet3</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/HelloKitty/GladNet3</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>GladNet Emulation Emulator WoW PSO Network Unity3D Network Networking Netlib GladNet4</PackageTags>
+    <PackageId>GladNet.Server.DotNetTcpServer</PackageId>
+    <Version>4.7.38</Version>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <IncludeSymbols>true</IncludeSymbols>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <WarningLevel>5</WarningLevel>
+    <DocumentationFile>C:\Users\Glader\Documents\Github\GladNet3\src\GladNet.Server.DotNetTcpServer\bin\GladNet.Server.DotNetTcpServer.xml</DocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Common.Logging" Version="3.4.1" />
+    <PackageReference Include="Nito.AsyncEx" Version="5.1.0" />
+    <PackageReference Include="Pipelines.Sockets.Unofficial" Version="2.2.8" targetFramework="netstandard2.0" />
+    <PackageReference Include="System.IO.Pipelines" Version="6.0.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\GladNet.API.Server\GladNet.API.Server.csproj" />
+    <ProjectReference Include="..\GladNet.API.TCP\GladNet.API.TCP.csproj" />
+  </ItemGroup>
+
+</Project>

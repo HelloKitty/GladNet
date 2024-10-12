@@ -1,0 +1,32 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <Authors>Andrew Blakely, HelloKitty</Authors>
+    <Company />
+    <Product>GladNet</Product>
+    <Description>GladNet (Glader's Library for Advanced Development of Network Emulation Technologies) server API library.</Description>
+    <Copyright>Andrew Blakely</Copyright>
+    <PackageLicenseUrl>https://github.com/HelloKitty/GladNet3/blob/master/LICENSE</PackageLicenseUrl>
+    <PackageProjectUrl>https://github.com/HelloKitty/GladNet3</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/HelloKitty/GladNet3</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>GladNet Emulation Emulator WoW PSO Network Unity3D Network Networking Netlib GladNet4</PackageTags>
+    <PackageId>GladNet.API.AutoFac</PackageId>
+    <Version>4.7.38</Version>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <IncludeSymbols>true</IncludeSymbols>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Autofac" Version="6.1.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\GladNet.API\GladNet.API.csproj" />
+  </ItemGroup>
+
+</Project>

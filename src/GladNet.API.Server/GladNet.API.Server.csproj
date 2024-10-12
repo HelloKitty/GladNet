@@ -1,0 +1,48 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <Authors>Andrew Blakely, HelloKitty</Authors>
+    <Company />
+    <Product>GladNet</Product>
+    <Description>GladNet (Glader's Library for Advanced Development of Network Emulation Technologies) server API library.</Description>
+    <Copyright>Andrew Blakely</Copyright>
+    <PackageLicenseUrl>https://github.com/HelloKitty/GladNet3/blob/master/LICENSE</PackageLicenseUrl>
+    <PackageProjectUrl>https://github.com/HelloKitty/GladNet3</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/HelloKitty/GladNet3</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>GladNet Emulation Emulator WoW PSO Network Unity3D Network Networking Netlib GladNet4</PackageTags>
+    <PackageId>GladNet.API.Server</PackageId>
+    <Version>4.7.38</Version>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <IncludeSymbols>true</IncludeSymbols>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <DocumentationFile>C:\Users\Glader\Documents\Github\GladNet3\src\GladNet.API.Server\bin\GladNet.API.Server.xml</DocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Folder Include="Extensions\" />
+    <Folder Include="Message\" />
+    <Folder Include="Session\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Common.Logging" Version="3.4.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\GladNet.API\GladNet.API.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+      <_Parameter1>GladNet.Server.DotNetTcpServer</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
+
+</Project>
