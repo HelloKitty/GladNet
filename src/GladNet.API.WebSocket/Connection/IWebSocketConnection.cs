@@ -49,6 +49,17 @@ namespace GladNet
 		/// <returns>Awaitable</returns>
 		Task ReceiveAsync(byte[] buffer, int count, CancellationToken token = default);
 
+		/// <summary>
+		/// Reads the <see cref="count"/> many bytes into the provided <see cref="buffer"/> starting at index <see cref="offset"/>.
+		/// Doesn't match the .NET API, is abit simplier.
+		/// </summary>
+		/// <param name="buffer">The buffer.</param>
+		/// <param name="offset">The buffer offset to start writing into.</param>
+		/// <param name="count">The amount of bytes to read.</param>
+		/// <param name="token">Cancel token.</param>
+		/// <returns>Awaitable</returns>
+		Task ReceiveAsync(byte[] buffer, int offset, int count, CancellationToken token = default);
+
 		// TODO: maybe all APIs should have this? Just read any available amount?
 		/// <summary>
 		/// Reads as many bytes as possible into the provider <see cref="buffer"/> starting at index 0.

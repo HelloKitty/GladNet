@@ -76,7 +76,11 @@ namespace GladNet
 		public async Task ReceiveAsync(byte[] buffer, int count, CancellationToken token = default)
 		{
 			ArraySegment<byte> bufferSegment = new ArraySegment<byte>(buffer, 0, count);
+			await ReceiveAsyncInternal(bufferSegment, count, token);
+		}
 
+		private async Task ReceiveAsyncInternal(ArraySegment<byte> bufferSegment, int count, CancellationToken token)
+		{
 			do
 			{
 				WebSocketReceiveResult result
@@ -85,18 +89,29 @@ namespace GladNet
 				var totalBytesRead = bufferSegment.Offset + result.Count;
 
 				// Read the buffer, don't rely on it being EndOfMessage. We might have the payload as apart of the same message
-				if(totalBytesRead
-				   == count)
+				if (totalBytesRead
+				    == count)
 					break;
 				else if (totalBytesRead > count)
 					throw new InvalidOperationException($"Read more bytes than request. Read: {totalBytesRead} Expected: {count}.");
 
 				// Move the segment forward
-				bufferSegment = new ArraySegment<byte>(buffer, bufferSegment.Offset + result.Count, bufferSegment.Count - result.Count);
+				if (result.Count > bufferSegment.Count)
+					throw new InvalidOperationException($"The WebSocket read more data ({result.Count}) than available in the buffer ({bufferSegment.Count}).");
 
-			} while(!IsCloseRequested 
-			        && !token.IsCancellationRequested
-					&& Connection.State == WebSocketState.Open);
+				// Move the segment forward
+				bufferSegment = new ArraySegment<byte>(bufferSegment.Array, bufferSegment.Offset + result.Count, bufferSegment.Count - result.Count);
+
+			} while (!IsCloseRequested
+			         && !token.IsCancellationRequested
+			         && Connection.State == WebSocketState.Open);
+		}
+
+		/// <inheritdoc />
+		public async Task ReceiveAsync(byte[] buffer, int offset, int count, CancellationToken token = default)
+		{
+			ArraySegment<byte> bufferSegment = new ArraySegment<byte>(buffer, offset, count);
+			await ReceiveAsyncInternal(bufferSegment, count, token);
 		}
 
 		/// <inheritdoc />

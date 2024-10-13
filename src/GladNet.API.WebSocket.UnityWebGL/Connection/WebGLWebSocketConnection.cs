@@ -205,12 +205,16 @@ namespace GladNet
 		/// <inheritdoc />
 		public async Task ReceiveAsync(byte[] buffer, int count, CancellationToken token = default)
 		{
+			await ReceiveAsync(buffer, 0, count, token);
+		}
+
+		/// <inheritdoc />
+		public async Task ReceiveAsync(byte[] buffer, int offset, int count, CancellationToken token = default)
+		{
 			if(!IsAssumedOpen)
 				throw new InvalidOperationException($"WebGL socket was no longer open during read.");
 
-			//UnityEngine.Debug.LogError($"About to process bytes in ReceiveAsync");
-
-			if(TryProcessReceiveNonAsync(buffer, count))
+			if(TryProcessReceiveNonAsync(buffer, offset, count))
 			{
 				//UnityEngine.Debug.LogError($"Enough bytes read, returning to gladnet internal.");
 				return;
@@ -233,10 +237,10 @@ namespace GladNet
 		/// <summary>
 		/// Attempts to process the received data without awaiting an asynchronous task.
 		/// </summary>
-		private bool TryProcessReceiveNonAsync(byte[] buffer, int count)
+		private bool TryProcessReceiveNonAsync(byte[] buffer, int offset, int count)
 		{
 			// TODO: We might want to process existing stuff in the future, since this awaits we'll only read afew packets per frame
-			PendingReadBuffer = new ArraySegment<byte>(buffer, 0, count);
+			PendingReadBuffer = new ArraySegment<byte>(buffer, offset, count);
 
 			var pendingReadBuffer = PendingReadBuffer;
 			ProcessPendingBytes(ref pendingReadBuffer);
