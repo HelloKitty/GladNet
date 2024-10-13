@@ -40,7 +40,18 @@ namespace GladNet
 			if (IsConnected)
 				return false;
 
-			await Connection.ConnectAsync(new Uri(ip), CancellationToken.None);
+			// Use UriBuilder to modify the URI
+			UriBuilder uriBuilder = new UriBuilder(ip);
+
+			// Check if the port is already present in the URI
+			// -1 means no port was specified
+			if (uriBuilder.Port <= 0
+				|| port > 0 && uriBuilder.Port != port) 
+				uriBuilder.Port = port; 
+
+			Uri finalUri = uriBuilder.Uri;
+
+			await Connection.ConnectAsync(finalUri, CancellationToken.None);
 			return Connection.State == WebSocketState.Open;
 		}
 	}
