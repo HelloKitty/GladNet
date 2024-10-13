@@ -81,12 +81,15 @@ namespace GladNet
 
 		private async Task ReceiveAsyncInternal(ArraySegment<byte> bufferSegment, int count, CancellationToken token)
 		{
+			int totalBytesRead = 0;
 			do
 			{
 				WebSocketReceiveResult result
 					= await Connection.ReceiveAsync(bufferSegment, token);
 
-				var totalBytesRead = bufferSegment.Offset + result.Count;
+				// No longer computable from the offset because we might BE at offset 2 starting and we read 1 byte, that would have
+				// been THREE but that's wrong.
+				totalBytesRead += result.Count;
 
 				// Read the buffer, don't rely on it being EndOfMessage. We might have the payload as apart of the same message
 				if (totalBytesRead
