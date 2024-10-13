@@ -1,6 +1,7 @@
 # GladNet (Glader's Library of Advanced Development for Network Emulation Technologies)
 
-Now V4 GladNet4, the 4rd generation of the .NET/C# GladNet networking library. The library evolved overtime to support the niche of server/client emulation for game development but expanded to become a generalized C#/.NET networking library with a focus on games networking. In short GladNet4 is a library that contains a collection of APIs that allow you to quickly assemble a client or server in C#. It has extendable API that can support multiple cryptography schemes and serializers.
+Introducing GladNet4, the 4th generation of the .NET/C# GladNet networking library.
+Originally designed for the niche of server/client network game emulation, GladNet has evolved into a generalized C#/.NET networking library, with a continued focus on games networking. GladNet4 offers a collection of APIs that enable developers to quickly build client or server software in .NET/C#. The library features an extendable API, supporting multiple cryptography schemes and serializers, making it highly adaptable.
 
 ## Features
 
