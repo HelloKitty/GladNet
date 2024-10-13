@@ -55,7 +55,7 @@ namespace GladNet
 
 		private static SessionMessageInterfaceServiceContext<TPayloadReadType, TPayloadWriteType> BuildMessageInterfaceContext(NetworkConnectionOptions networkOptions, IWebSocketConnection connection, SessionMessageBuildingServiceContext<TPayloadReadType, TPayloadWriteType> messageServices)
 		{
-			INetworkMessageInterface<TPayloadReadType, TPayloadWriteType> messageInterface = new SocketConnectionNetworkMessageInterface<TPayloadReadType, TPayloadWriteType>(networkOptions, connection, messageServices);
+			INetworkMessageInterface<TPayloadReadType, TPayloadWriteType> messageInterface = new WebSocketConnectionNetworkMessageInterface<TPayloadReadType, TPayloadWriteType>(networkOptions, connection, messageServices);
 			return BuildMessageInterfaceContext(messageInterface);
 		}
 
