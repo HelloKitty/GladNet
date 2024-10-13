@@ -71,6 +71,8 @@ namespace GladNet
 				throw new NotSupportedException($"It is not supported to call {nameof(ConnectAsync)} on a non-client websocket.");
 		}
 
+		// WARNING: These should not be called at the same time RecieveAnyAsync is called
+		/// <inheritdoc />
 		public async Task ReceiveAsync(byte[] buffer, int count, CancellationToken token = default)
 		{
 			ArraySegment<byte> bufferSegment = new ArraySegment<byte>(buffer, 0, count);
@@ -95,6 +97,25 @@ namespace GladNet
 			} while(!IsCloseRequested 
 			        && !token.IsCancellationRequested
 					&& Connection.State == WebSocketState.Open);
+		}
+
+		/// <inheritdoc />
+		public async Task<int> ReceiveAnyAsync(byte[] buffer, CancellationToken token = default)
+		{
+			ArraySegment<byte> bufferSegment = new ArraySegment<byte>(buffer, 0, buffer.Length);
+
+			WebSocketReceiveResult result
+				= await Connection.ReceiveAsync(bufferSegment, token);
+
+			var totalBytesRead = result.Count;
+
+			if(totalBytesRead == 0)
+				return 0;
+
+			if(totalBytesRead > buffer.Length)
+				throw new InvalidOperationException($"Read more bytes than request. Read: {totalBytesRead} Expected less than or equal to: {buffer.Length}.");
+
+			return totalBytesRead;
 		}
 
 		/// <inheritdoc />
