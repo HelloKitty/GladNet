@@ -224,6 +224,12 @@ namespace GladNet
 			ReadNotifyTask = null;
 		}
 
+		/// <inheritdoc />
+		public async Task<int> ReceiveAnyAsync(byte[] buffer, CancellationToken token = default)
+		{
+			throw new NotSupportedException($"{nameof(ReceiveAnyAsync)} is not supported for WebGL sockets.");
+		}
+
 		/// <summary>
 		/// Attempts to process the received data without awaiting an asynchronous task.
 		/// </summary>
