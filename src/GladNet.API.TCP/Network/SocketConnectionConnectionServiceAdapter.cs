@@ -20,7 +20,7 @@ namespace GladNet
 		// This is because Connection.Socket.Connected may still be true even after Connection.Socket.ConnectAsync
 		// down below finishes awaiting.
 		/// <inheritdoc />
-		public bool isConnected => Connection.Socket.Connected 
+		public bool IsConnected => Connection.Socket.Connected 
 		                           && Connection.ShutdownKind == PipeShutdownKind.None;
 
 		public SocketConnectionConnectionServiceAdapter(SocketConnection connection)

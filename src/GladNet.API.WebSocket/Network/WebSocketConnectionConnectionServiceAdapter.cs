@@ -19,7 +19,7 @@ namespace GladNet
 		private IWebSocketConnection Connection { get; }
 
 		/// <inheritdoc />
-		public bool isConnected => (Connection.State == WebSocketState.Open || Connection.State == WebSocketState.Connecting)
+		public bool IsConnected => (Connection.State == WebSocketState.Open || Connection.State == WebSocketState.Connecting)
 		                           && !Connection.CloseStatus.HasValue;
 
 		public WebSocketConnectionConnectionServiceAdapter(IWebSocketConnection connection)
@@ -37,7 +37,7 @@ namespace GladNet
 		/// <inheritdoc />
 		public async Task<bool> ConnectAsync(string ip, int port)
 		{
-			if (isConnected)
+			if (IsConnected)
 				return false;
 
 			await Connection.ConnectAsync(new Uri(ip), CancellationToken.None);

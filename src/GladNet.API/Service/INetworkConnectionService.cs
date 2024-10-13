@@ -15,6 +15,6 @@ namespace GladNet
 		/// <summary>
 		/// Indicates if a connection is established.
 		/// </summary>
-		bool isConnected { get; }
+		bool IsConnected { get; }
 	}
 }

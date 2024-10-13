@@ -69,7 +69,7 @@ namespace GladNet.DotNetTcpClient.EchoTest
 
 			Task.Run(async () =>
 			{
-				while (session.ConnectionService.isConnected)
+				while (session.ConnectionService.IsConnected)
 				{
 					Console.Write($"Enter: ");
 					string input = Console.ReadLine();
