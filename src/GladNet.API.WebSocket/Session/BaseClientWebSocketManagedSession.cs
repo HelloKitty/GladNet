@@ -28,7 +28,7 @@ namespace GladNet
 
 		protected BaseWebSocketManagedSession(NetworkConnectionOptions networkOptions, IWebSocketConnection connection, SessionDetails details,
 			SessionMessageBuildingServiceContext<TPayloadReadType, TPayloadWriteType> messageServices) 
-			: base(new SocketConnectionConnectionServiceAdapter(connection), details, networkOptions, messageServices,
+			: base(new WebSocketConnectionConnectionServiceAdapter(connection), details, networkOptions, messageServices,
 				BuildMessageInterfaceContext(networkOptions, connection, messageServices))
 		{
 			Connection = connection ?? throw new ArgumentNullException(nameof(connection));
@@ -38,7 +38,7 @@ namespace GladNet
 		protected BaseWebSocketManagedSession(NetworkConnectionOptions networkOptions, IWebSocketConnection connection, SessionDetails details,
 			SessionMessageBuildingServiceContext<TPayloadReadType, TPayloadWriteType> messageServices,
 			INetworkMessageInterface<TPayloadReadType, TPayloadWriteType> messageInterface)
-			: base(new SocketConnectionConnectionServiceAdapter(connection), details, networkOptions, messageServices,
+			: base(new WebSocketConnectionConnectionServiceAdapter(connection), details, networkOptions, messageServices,
 				BuildMessageInterfaceContext(messageInterface))
 		{
 			Connection = connection ?? throw new ArgumentNullException(nameof(connection));
@@ -48,7 +48,7 @@ namespace GladNet
 		protected BaseWebSocketManagedSession(NetworkConnectionOptions networkOptions, IWebSocketConnection connection, SessionDetails details,
 			SessionMessageBuildingServiceContext<TPayloadReadType, TPayloadWriteType> messageServices,
 			SessionMessageInterfaceServiceContext<TPayloadReadType, TPayloadWriteType> messageInterfaces)
-			: base(new SocketConnectionConnectionServiceAdapter(connection), details, networkOptions, messageServices, messageInterfaces)
+			: base(new WebSocketConnectionConnectionServiceAdapter(connection), details, networkOptions, messageServices, messageInterfaces)
 		{
 			Connection = connection ?? throw new ArgumentNullException(nameof(connection));
 		}

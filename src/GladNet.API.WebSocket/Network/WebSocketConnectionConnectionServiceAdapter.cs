@@ -11,7 +11,7 @@ namespace GladNet
 	/// <summary>
 	/// Implementation of <see cref="INetworkConnectionService"/> based around <see cref="WebSocket"/>
 	/// </summary>
-	public sealed class SocketConnectionConnectionServiceAdapter : INetworkConnectionService
+	public sealed class WebSocketConnectionConnectionServiceAdapter : INetworkConnectionService
 	{
 		/// <summary>
 		/// Internal socket connection.
@@ -22,7 +22,7 @@ namespace GladNet
 		public bool isConnected => (Connection.State == WebSocketState.Open || Connection.State == WebSocketState.Connecting)
 		                           && !Connection.CloseStatus.HasValue;
 
-		public SocketConnectionConnectionServiceAdapter(IWebSocketConnection connection)
+		public WebSocketConnectionConnectionServiceAdapter(IWebSocketConnection connection)
 		{
 			Connection = connection ?? throw new ArgumentNullException(nameof(connection));
 		}
