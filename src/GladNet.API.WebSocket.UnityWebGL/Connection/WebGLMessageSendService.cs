@@ -41,7 +41,7 @@ namespace GladNet
 		/// <inheritdoc />
 		public async Task<SendResult> SendMessageAsync(TPayloadWriteType message, CancellationToken token = default)
 		{
-			var buffer = ArrayPool<byte>.Shared.Rent(NetworkOptions.MaximumPacketSize);
+			var buffer = NetworkOptions.PacketArrayPool.Rent(NetworkOptions.MaximumPacketSize);
 			try
 			{
 				WritePacketToBuffer(message, buffer, out var headerSize, out var payloadSize);
@@ -49,7 +49,7 @@ namespace GladNet
 			}
 			finally
 			{
-				ArrayPool<byte>.Shared.Return(buffer);
+				NetworkOptions.PacketArrayPool.Return(buffer);
 			}
 
 			return SendResult.Sent;

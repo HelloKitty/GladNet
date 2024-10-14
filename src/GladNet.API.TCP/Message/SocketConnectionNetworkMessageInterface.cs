@@ -207,7 +207,7 @@ namespace GladNet
 
 			//I opted to do this instead of stack alloc because of HUGE dangers in stack alloc and this is pretty efficient
 			//buffer usage anyway.
-			byte[] rentedBuffer = ArrayPool<byte>.Shared.Rent(header.PayloadSize);
+			byte[] rentedBuffer = NetworkOptions.PacketArrayPool.Rent(header.PayloadSize);
 			Span<byte> buffer = new Span<byte>(rentedBuffer, 0, header.PayloadSize);
 
 			try
@@ -220,7 +220,7 @@ namespace GladNet
 			}
 			finally
 			{
-				ArrayPool<byte>.Shared.Return(rentedBuffer);
+				NetworkOptions.PacketArrayPool.Return(rentedBuffer);
 			}
 		}
 

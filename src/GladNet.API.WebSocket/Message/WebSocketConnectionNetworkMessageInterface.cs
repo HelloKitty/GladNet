@@ -107,7 +107,7 @@ namespace GladNet
 				if (header.PayloadSize >= NetworkOptions.MaximumPayloadSize)
 					throw new InvalidOperationException($"Encountered Payload with Size: {header.PayloadSize} greater than Max: {NetworkOptions.MaximumPayloadSize}");
 
-				var payloadBuffer = ArrayPool<byte>.Shared.Rent(header.PayloadSize);
+				var payloadBuffer = NetworkOptions.PacketArrayPool.Rent(header.PayloadSize);
 				try
 				{
 					await ReadUntilBufferFullAsync(payloadBuffer, header.PayloadSize, token);
@@ -121,7 +121,7 @@ namespace GladNet
 				}
 				finally
 				{
-					ArrayPool<byte>.Shared.Return(payloadBuffer);
+					NetworkOptions.PacketArrayPool.Return(payloadBuffer);
 				}
 			}
 
@@ -157,7 +157,7 @@ namespace GladNet
 
 			//I opted to do this instead of stack alloc because of HUGE dangers in stack alloc and this is pretty efficient
 			//buffer usage anyway.
-			byte[] rentedBuffer = ArrayPool<byte>.Shared.Rent(header.PayloadSize);
+			byte[] rentedBuffer = NetworkOptions.PacketArrayPool.Rent(header.PayloadSize);
 			Span<byte> buffer = new Span<byte>(rentedBuffer, 0, header.PayloadSize);
 
 			try
@@ -170,7 +170,7 @@ namespace GladNet
 			}
 			finally
 			{
-				ArrayPool<byte>.Shared.Return(rentedBuffer);
+				NetworkOptions.PacketArrayPool.Return(rentedBuffer);
 			}
 		}
 
@@ -224,7 +224,7 @@ namespace GladNet
 			if(payload == null) throw new ArgumentNullException(nameof(payload));
 
 			//TODO: We should find a way to predict the size of a payload type.
-			var buffer = ArrayPool<byte>.Shared.Rent(NetworkOptions.MaximumPacketSize);
+			var buffer = NetworkOptions.PacketArrayPool.Rent(NetworkOptions.MaximumPacketSize);
 			try
 			{
 				WritePacketToBuffer(payload, buffer, out var headerSize, out var payloadSize);
@@ -232,7 +232,7 @@ namespace GladNet
 			}
 			finally
 			{
-				ArrayPool<byte>.Shared.Return(buffer);
+				NetworkOptions.PacketArrayPool.Return(buffer);
 			}
 		}
 
