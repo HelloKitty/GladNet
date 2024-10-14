@@ -14,7 +14,7 @@
     <PackageTags>GladNet Emulation Emulator WoW PSO Network Unity3D Network Networking Netlib GladNet4</PackageTags>
     <LangVersion>latest</LangVersion>
     <PackageId>GladNet.API.WebSocket.UnityWebGL</PackageId>
-    <Version>4.9.43</Version>
+    <Version>4.9.44</Version>
   </PropertyGroup>
 
   <PropertyGroup>
