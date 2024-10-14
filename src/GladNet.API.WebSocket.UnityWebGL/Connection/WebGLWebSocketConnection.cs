@@ -15,7 +15,6 @@ namespace GladNet
 {
 	/// <summary>
 	/// WebGL compatible implementation of GladNet's <see cref="IWebSocketConnection"/>.
-	/// This class handles the WebSocket connection lifecycle, data transmission, and reception in a WebGL environment using native JavaScript functions via <c>DllImport</c>.
 	/// </summary>
 	public sealed class WebGLWebSocketConnection : IWebSocketConnection, IUnityWebGLWebSocket
 	{
@@ -62,13 +61,14 @@ namespace GladNet
 		/// <inheritdoc />
 		public WebSocketState State => GetState();
 
+		// TODO: Can we even implement this??
 		/// <inheritdoc />
 		public WebSocketCloseStatus? CloseStatus { get; } = null;
 
 		/// <summary>
-		/// A more efficient approximation to track whether the WebSocket is open.
+		/// More efficient approximation of if the socket is open.
 		/// </summary>
-		private bool IsAssumedOpen { get; set; } = false;
+		bool IsAssumedOpen { get; set; } = false;
 
 		private int InstanceId { get; set; } = -1;
 
@@ -83,7 +83,7 @@ namespace GladNet
 		/// </summary>
 		public WebGLWebSocketConnection()
 		{
-			// Setup the message queue
+			// Setup the message queue stuff
 			OnMessage += OnByteMessage;
 		}
 
@@ -94,6 +94,9 @@ namespace GladNet
 		private void OnByteMessage(byte[] data)
 		{
 			ByteMessageQueue.Add(data);
+
+			//UnityEngine.Debug.LogError($"MessageQueueSize: {ByteMessageQueue.Count}");
+
 			ProcessMessageQueue();
 		}
 
@@ -102,9 +105,10 @@ namespace GladNet
 		/// </summary>
 		private void ProcessMessageQueue()
 		{
+			// WARNING: AI once chnaged this watch out!
 			var pendingReadBuffer = PendingReadBuffer;
-			if(pendingReadBuffer == null 
-			   || ReadNotifyTask == null)
+			if (PendingReadBuffer == null
+			    || ReadNotifyTask == null)
 				return;
 
 			try
@@ -112,14 +116,16 @@ namespace GladNet
 				ProcessPendingBytes(ref pendingReadBuffer);
 				PendingReadBuffer = pendingReadBuffer;
 
-				if(PendingReadBuffer.Count == 0)
+				// Notify the reader we have bytes fully now
+				if (PendingReadBuffer.Count == 0)
 				{
 					PendingReadBuffer = null;
-					ReadNotifyTask?.SetResult(null);
+					var task = ReadNotifyTask;
 					ReadNotifyTask = null;
+					task?.SetResult(null);
 				}
 			}
-			catch(Exception e)
+			catch (Exception e)
 			{
 				UnityEngine.Debug.LogError($"Processing Bytes Failed: {e}");
 			}
@@ -183,7 +189,7 @@ namespace GladNet
 		{
 			PendingReadBuffer = null;
 			IsAssumedOpen = false;
-			ReadNotifyTask?.SetException(new OperationCanceledException("WebGL socket connect reset/disposed."));
+			ReadNotifyTask?.SetException(new OperationCanceledException($"WebGL socket connect reset/disposed."));
 			ReadNotifyTask = null;
 		}
 
@@ -214,6 +220,8 @@ namespace GladNet
 			if(!IsAssumedOpen)
 				throw new InvalidOperationException($"WebGL socket was no longer open during read.");
 
+			//UnityEngine.Debug.LogError($"About to process bytes in ReceiveAsync");
+
 			if(TryProcessReceiveNonAsync(buffer, offset, count))
 			{
 				//UnityEngine.Debug.LogError($"Enough bytes read, returning to gladnet internal.");
@@ -231,7 +239,7 @@ namespace GladNet
 		/// <inheritdoc />
 		public async Task<int> ReceiveAnyAsync(byte[] buffer, CancellationToken token = default)
 		{
-			throw new NotSupportedException($"{nameof(ReceiveAnyAsync)} is not supported for WebGL sockets.");
+			throw new NotSupportedException($"{nameof(ReceiveAnyAsync)} is not supported in WebGL");
 		}
 
 		/// <summary>
@@ -264,7 +272,7 @@ namespace GladNet
 		{
 			// TODO: Wtf, no support for "EndMessage"???
 			if(buffer.Offset != 0)
-				throw new NotSupportedException("Cannot support sending WebGL socket bytes with a non-zero segment offset.");
+				throw new NotSupportedException($"Cannot support sending WebGL socket bytes with segment isn't starting at zero-index.");
 
 			int result = WebSocketSend(InstanceId, buffer.Array, buffer.Count);
 
