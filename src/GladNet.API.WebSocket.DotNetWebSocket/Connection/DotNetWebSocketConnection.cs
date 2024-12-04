@@ -71,30 +71,69 @@ namespace GladNet
 				throw new NotSupportedException($"It is not supported to call {nameof(ConnectAsync)} on a non-client websocket.");
 		}
 
+		// WARNING: These should not be called at the same time RecieveAnyAsync is called
+		/// <inheritdoc />
 		public async Task ReceiveAsync(byte[] buffer, int count, CancellationToken token = default)
 		{
 			ArraySegment<byte> bufferSegment = new ArraySegment<byte>(buffer, 0, count);
+			await ReceiveAsyncInternal(bufferSegment, count, token);
+		}
 
+		private async Task ReceiveAsyncInternal(ArraySegment<byte> bufferSegment, int count, CancellationToken token)
+		{
+			int totalBytesRead = 0;
 			do
 			{
 				WebSocketReceiveResult result
 					= await Connection.ReceiveAsync(bufferSegment, token);
 
-				var totalBytesRead = bufferSegment.Offset + result.Count;
+				// No longer computable from the offset because we might BE at offset 2 starting and we read 1 byte, that would have
+				// been THREE but that's wrong.
+				totalBytesRead += result.Count;
 
 				// Read the buffer, don't rely on it being EndOfMessage. We might have the payload as apart of the same message
-				if(totalBytesRead
-				   == count)
+				if (totalBytesRead
+				    == count)
 					break;
 				else if (totalBytesRead > count)
 					throw new InvalidOperationException($"Read more bytes than request. Read: {totalBytesRead} Expected: {count}.");
 
 				// Move the segment forward
-				bufferSegment = new ArraySegment<byte>(buffer, bufferSegment.Offset + result.Count, bufferSegment.Count - result.Count);
+				if (result.Count > bufferSegment.Count)
+					throw new InvalidOperationException($"The WebSocket read more data ({result.Count}) than available in the buffer ({bufferSegment.Count}).");
 
-			} while(!IsCloseRequested 
-			        && !token.IsCancellationRequested
-					&& Connection.State == WebSocketState.Open);
+				// Move the segment forward
+				bufferSegment = new ArraySegment<byte>(bufferSegment.Array, bufferSegment.Offset + result.Count, bufferSegment.Count - result.Count);
+
+			} while (!IsCloseRequested
+			         && !token.IsCancellationRequested
+			         && Connection.State == WebSocketState.Open);
+		}
+
+		/// <inheritdoc />
+		public async Task ReceiveAsync(byte[] buffer, int offset, int count, CancellationToken token = default)
+		{
+			ArraySegment<byte> bufferSegment = new ArraySegment<byte>(buffer, offset, count);
+			await ReceiveAsyncInternal(bufferSegment, count, token);
+		}
+
+		/// <inheritdoc />
+		public async Task<int> ReceiveAnyAsync(byte[] buffer, CancellationToken token = default)
+		{
+			ArraySegment<byte> bufferSegment = new ArraySegment<byte>(buffer, 0, buffer.Length);
+
+			WebSocketReceiveResult result
+				= await Connection.ReceiveAsync(bufferSegment, token);
+
+			var totalBytesRead = result.Count;
+
+			if(totalBytesRead == 0)
+				return 0;
+
+			if(totalBytesRead > buffer.Length)
+				throw new InvalidOperationException($"Read more bytes than request. Read: {totalBytesRead} Expected less than or equal to: {buffer.Length}.");
+
+			return totalBytesRead;
 		}
 
 		/// <inheritdoc />

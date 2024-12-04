@@ -11,7 +11,7 @@ namespace GladNet
 	/// <summary>
 	/// Implementation of <see cref="INetworkConnectionService"/> based around <see cref="WebSocket"/>
 	/// </summary>
-	public sealed class SocketConnectionConnectionServiceAdapter : INetworkConnectionService
+	public sealed class WebSocketConnectionConnectionServiceAdapter : INetworkConnectionService
 	{
 		/// <summary>
 		/// Internal socket connection.
@@ -19,10 +19,10 @@ namespace GladNet
 		private IWebSocketConnection Connection { get; }
 
 		/// <inheritdoc />
-		public bool isConnected => (Connection.State == WebSocketState.Open || Connection.State == WebSocketState.Connecting)
+		public bool IsConnected => (Connection.State == WebSocketState.Open || Connection.State == WebSocketState.Connecting)
 		                           && !Connection.CloseStatus.HasValue;
 
-		public SocketConnectionConnectionServiceAdapter(IWebSocketConnection connection)
+		public WebSocketConnectionConnectionServiceAdapter(IWebSocketConnection connection)
 		{
 			Connection = connection ?? throw new ArgumentNullException(nameof(connection));
 		}
@@ -37,10 +37,21 @@ namespace GladNet
 		/// <inheritdoc />
 		public async Task<bool> ConnectAsync(string ip, int port)
 		{
-			if (isConnected)
+			if (IsConnected)
 				return false;
 
-			await Connection.ConnectAsync(new Uri(ip), CancellationToken.None);
+			// Use UriBuilder to modify the URI
+			UriBuilder uriBuilder = new UriBuilder(ip);
+
+			// Check if the port is already present in the URI
+			// -1 means no port was specified
+			if (uriBuilder.Port <= 0
+				|| port > 0 && uriBuilder.Port != port) 
+				uriBuilder.Port = port; 
+
+			Uri finalUri = uriBuilder.Uri;
+
+			await Connection.ConnectAsync(finalUri, CancellationToken.None);
 			return Connection.State == WebSocketState.Open;
 		}
 	}

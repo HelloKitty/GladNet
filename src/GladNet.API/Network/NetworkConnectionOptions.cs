@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Text;
+using Glader.Essentials;
 
 namespace GladNet
 {
@@ -28,6 +30,12 @@ namespace GladNet
 		/// </summary>
 		public int MaximumPayloadSize { get; }
 
+		/// <summary>
+		/// Retrieves an array pool specific to the options.
+		/// Specifically <see cref="MaximumPacketSize"/>
+		/// </summary>
+		public ArrayPool<byte> PacketArrayPool => GetPacketArrayPool();
+
 		public NetworkConnectionOptions()
 		{
 			MaximumPayloadSize = NetworkConnectionOptionsConstants.DEFAULT_MAXIMUM_PACKET_PAYLOAD_SIZE;
@@ -42,6 +50,25 @@ namespace GladNet
 			MinimumPacketHeaderSize = minimumPacketHeaderSize;
 			MaximumPacketHeaderSize = maximumPacketHeaderSize;
 			MaximumPayloadSize = maximumPayloadSize;
+		}
+
+		private const int DefaultMaxArrayPoolArrayLength = 1024 * 1024;
+
+		/// <summary>
+		/// Determines which array pool to use for the network options.
+		/// </summary>
+		/// <returns>An array pool to use for the packet buffers.</returns>
+		private ArrayPool<byte> GetPacketArrayPool()
+		{
+			// See: https://github.com/dotnet/runtime/blob/6221ddb3051463309801c9008f332b34361da798/src/libraries/System.Private.CoreLib/src/System/Buffers/ConfigurableArrayPool.cs#L12
+			if (MaximumPacketSize >= DefaultMaxArrayPoolArrayLength)
+			{
+				return LargeArrayPool<byte>.Shared;
+			}
+			else
+			{
+				return ArrayPool<byte>.Shared;
+			}
 		}
 	}
 }

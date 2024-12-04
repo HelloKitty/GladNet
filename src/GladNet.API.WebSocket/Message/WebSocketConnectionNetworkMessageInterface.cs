@@ -16,7 +16,7 @@ namespace GladNet
 	/// </summary>
 	/// <typeparam name="TPayloadWriteType"></typeparam>
 	/// <typeparam name="TPayloadReadType"></typeparam>
-	public class SocketConnectionNetworkMessageInterface<TPayloadReadType, TPayloadWriteType> : INetworkMessageInterface<TPayloadReadType, TPayloadWriteType>
+	public class WebSocketConnectionNetworkMessageInterface<TPayloadReadType, TPayloadWriteType> : INetworkMessageInterface<TPayloadReadType, TPayloadWriteType>
 		where TPayloadWriteType : class 
 		where TPayloadReadType : class
 	{
@@ -37,7 +37,7 @@ namespace GladNet
 
 		private AsyncLock PayloadWriteLock { get; } = new AsyncLock();
 
-		public SocketConnectionNetworkMessageInterface(NetworkConnectionOptions networkOptions,
+		public WebSocketConnectionNetworkMessageInterface(NetworkConnectionOptions networkOptions,
 			IWebSocketConnection connection, 
 			SessionMessageBuildingServiceContext<TPayloadReadType, TPayloadWriteType> messageServices)
 		{
@@ -49,19 +49,42 @@ namespace GladNet
 		/// <inheritdoc />
 		public async Task<NetworkIncomingMessage<TPayloadReadType>> ReadMessageAsync(CancellationToken token = default)
 		{
-			if (NetworkOptions.MaximumPacketHeaderSize != NetworkOptions.MinimumPacketHeaderSize)
-				throw new NotSupportedException($"TODO: Support variable size packet header sizes for websockets.");
-
 			while (!token.IsCancellationRequested 
 			       && Connection.State == WebSocketState.Open)
 			{
-				var headerBuffer = ArrayPool<byte>.Shared.Rent(NetworkOptions.MinimumPacketHeaderSize);
+				// Buffer is MAX HEADER SIZE, we read MINIMUM size into it
+				// and then see if we need to read more.
+				var headerBuffer = ArrayPool<byte>.Shared.Rent(NetworkOptions.MaximumPacketHeaderSize);
+
 				IPacketHeader header;
 				int headerBytesRead;
 				try
 				{
 					await ReadUntilBufferFullAsync(headerBuffer, NetworkOptions.MinimumPacketHeaderSize, token);
-					header = ReadIncomingPacketHeader(new ReadOnlySequence<byte>(headerBuffer, 0, NetworkOptions.MinimumPacketHeaderSize), out headerBytesRead);
+
+					// This code below was added to support variable length headers.
+					// At this point we either have the entire packet header OR we maybed need to read another byte
+					var totalPacketHeaderBytes = new ReadOnlySequence<byte>(headerBuffer, 0, NetworkOptions.MinimumPacketHeaderSize);
+
+					if (!MessageServices.PacketHeaderFactory.IsHeaderReadable(totalPacketHeaderBytes))
+					{
+						// Read the rest because we should now be able to compute the size
+						int fullSize = MessageServices.PacketHeaderFactory.ComputeHeaderSize(totalPacketHeaderBytes);
+
+						if (fullSize > NetworkOptions.MaximumPacketHeaderSize)
+							throw new InvalidOperationException($"Calculated packet header size exceeds max Size: {NetworkOptions.MaximumPacketHeaderSize}");
+
+						int missingByteSize = fullSize - NetworkOptions.MinimumPacketHeaderSize;
+
+						if (missingByteSize <= 0)
+							throw new InvalidOperationException($"Packet header was not readable but also had no missing size.");
+
+						// Read the missing bytes into the buffer
+						await ReadAsync(headerBuffer, NetworkOptions.MinimumPacketHeaderSize, missingByteSize, token);
+						totalPacketHeaderBytes = new ReadOnlySequence<byte>(headerBuffer, 0, fullSize);
+					}
+
+					header = ReadIncomingPacketHeader(totalPacketHeaderBytes, out headerBytesRead);
 				}
 				finally
 				{
@@ -84,7 +107,7 @@ namespace GladNet
 				if (header.PayloadSize >= NetworkOptions.MaximumPayloadSize)
 					throw new InvalidOperationException($"Encountered Payload with Size: {header.PayloadSize} greater than Max: {NetworkOptions.MaximumPayloadSize}");
 
-				var payloadBuffer = ArrayPool<byte>.Shared.Rent(header.PayloadSize);
+				var payloadBuffer = NetworkOptions.PacketArrayPool.Rent(header.PayloadSize);
 				try
 				{
 					await ReadUntilBufferFullAsync(payloadBuffer, header.PayloadSize, token);
@@ -98,7 +121,7 @@ namespace GladNet
 				}
 				finally
 				{
-					ArrayPool<byte>.Shared.Return(payloadBuffer);
+					NetworkOptions.PacketArrayPool.Return(payloadBuffer);
 				}
 			}
 
@@ -108,6 +131,11 @@ namespace GladNet
 		private async Task ReadUntilBufferFullAsync(byte[] buffer, int bufferSize, CancellationToken token)
 		{
 			await Connection.ReceiveAsync(buffer, bufferSize, token);
+		}
+
+		private async Task ReadAsync(byte[] buffer, int offset, int length, CancellationToken token)
+		{
+			await Connection.ReceiveAsync(buffer, offset, length, token);
 		}
 
 		/// <summary>
@@ -129,7 +157,7 @@ namespace GladNet
 
 			//I opted to do this instead of stack alloc because of HUGE dangers in stack alloc and this is pretty efficient
 			//buffer usage anyway.
-			byte[] rentedBuffer = ArrayPool<byte>.Shared.Rent(header.PayloadSize);
+			byte[] rentedBuffer = NetworkOptions.PacketArrayPool.Rent(header.PayloadSize);
 			Span<byte> buffer = new Span<byte>(rentedBuffer, 0, header.PayloadSize);
 
 			try
@@ -142,7 +170,7 @@ namespace GladNet
 			}
 			finally
 			{
-				ArrayPool<byte>.Shared.Return(rentedBuffer);
+				NetworkOptions.PacketArrayPool.Return(rentedBuffer);
 			}
 		}
 
@@ -196,7 +224,7 @@ namespace GladNet
 			if(payload == null) throw new ArgumentNullException(nameof(payload));
 
 			//TODO: We should find a way to predict the size of a payload type.
-			var buffer = ArrayPool<byte>.Shared.Rent(NetworkOptions.MaximumPacketSize);
+			var buffer = NetworkOptions.PacketArrayPool.Rent(NetworkOptions.MaximumPacketSize);
 			try
 			{
 				WritePacketToBuffer(payload, buffer, out var headerSize, out var payloadSize);
@@ -204,7 +232,7 @@ namespace GladNet
 			}
 			finally
 			{
-				ArrayPool<byte>.Shared.Return(buffer);
+				NetworkOptions.PacketArrayPool.Return(buffer);
 			}
 		}
 
