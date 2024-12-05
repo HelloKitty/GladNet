@@ -29,6 +29,7 @@ namespace GladNet
 			return true;
 		}
 
+		/// <inheritdoc />
 		public void Dispose()
 		{
 			InternalQueue.CompleteAdding();

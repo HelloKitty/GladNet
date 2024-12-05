@@ -12,7 +12,7 @@ namespace GladNet
 	/// for the provided generic message type.
 	/// </summary>
 	/// <typeparam name="TMessageType">The generic message type the queue supports.</typeparam>
-	public interface IAsyncMessageQueue<TMessageType>
+	public interface IAsyncMessageQueue<TMessageType> : IDisposable
 	{
 		/// <summary>
 		/// Attempts to dequeue a message from the async message queue.
