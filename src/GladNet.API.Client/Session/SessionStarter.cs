@@ -13,6 +13,10 @@ namespace GladNet
 	{
 		private ILog Logger { get; }
 
+		private bool IsDisposed { get; set; } = false;
+
+		private CancellationTokenSource CancelSource { get; } = new CancellationTokenSource();
+
 		public SessionStarter(ILog logger)
 		{
 			Logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -20,8 +24,35 @@ namespace GladNet
 
 		public async Task StartAsync(TSessionType session, CancellationToken token = default)
 		{
-			Task writeTask = Task.Run(async () => await StartSessionNetworkThreadAsync(session.Details, session.StartWritingAsync(token), "Write"), token);
-			Task readTask = Task.Run(async () => await StartSessionNetworkThreadAsync(session.Details, session.StartListeningAsync(token), "Read"), token);
+			if (IsDisposed)
+				throw new ObjectDisposedException($"Session starter already disposed.");
+
+			Task writeTask = Task.Run(async () =>
+			{
+				var linkedTokenSource = CancellationTokenSource.CreateLinkedTokenSource(token, CancelSource.Token);
+				try
+				{
+					await StartSessionNetworkThreadAsync(session.Details, session.StartWritingAsync(linkedTokenSource.Token), "Write");
+				}
+				finally
+				{
+					linkedTokenSource.Dispose();
+				}
+
+			}, token);
+
+			Task readTask = Task.Run(async () =>
+			{
+				var linkedTokenSource = CancellationTokenSource.CreateLinkedTokenSource(token, CancelSource.Token);
+				try
+				{
+					await StartSessionNetworkThreadAsync(session.Details, session.StartListeningAsync(linkedTokenSource.Token), "Read");
+				}
+				finally
+				{
+					linkedTokenSource.Dispose();
+				}
+			}, token);
 
 			await Task.Run(async () =>
 			{
@@ -31,7 +62,7 @@ namespace GladNet
 				}
 				catch(Exception e)
 				{
-					//Suppress this exception, we have critical deconstruction code to run.
+					//Suppre ss this exception, we have critical deconstruction code to run.
 					if(Logger.IsErrorEnabled)
 						Logger.Error($"Session: {session.Details.ConnectionId} encountered critical failure in awaiting network task. Error: {e}");
 				}
@@ -136,6 +167,20 @@ namespace GladNet
 		{
 			// WARNING: heed warning in Thread.Abort doc, don't do it
 			// See: https://learn.microsoft.com/en-us/dotnet/api/system.threading.thread.abort?view=net-8.0
+			if(IsDisposed)
+				return;
+
+			IsDisposed = true;
+
+			try
+			{
+				if(!CancelSource.IsCancellationRequested)
+					CancelSource.Cancel();
+			}
+			finally
+			{
+				CancelSource?.Dispose();
+			}
 		}
 	}
 }
