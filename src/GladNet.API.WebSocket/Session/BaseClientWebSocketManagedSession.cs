@@ -77,6 +77,11 @@ namespace GladNet
 			{
 				//Dequeue from the outgoing message queue and send through the send service.
 				TPayloadWriteType payload = await MessageService.OutgoingMessageQueue.DequeueAsync(token);
+
+				// This means the queue ended.
+				if (payload == null)
+					return;
+
 				SendResult result = await MessageService.MessageInterface.SendMessageAsync(payload, token);
 
 				//TODO: Add logging!
