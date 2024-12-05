@@ -37,6 +37,9 @@ namespace GladNet
 		{
 			MessageBuilders = messageBuilders ?? throw new ArgumentNullException(nameof(messageBuilders));
 			MessageService = messageService ?? throw new ArgumentNullException(nameof(messageService));
+
+			// This needs disposing so queues can complete.
+			AttachDisposable(MessageService);
 		}
 
 		/// <inheritdoc />
