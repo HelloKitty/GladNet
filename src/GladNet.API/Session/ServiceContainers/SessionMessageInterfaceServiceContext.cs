@@ -12,7 +12,7 @@ namespace GladNet
 	/// </summary>
 	/// <typeparam name="TPayloadWriteType">The outgoing write type for payloads.</typeparam>
 	/// <typeparam name="TPayloadReadType">The incoming read type for payloads.</typeparam>
-	public sealed class SessionMessageInterfaceServiceContext<TPayloadReadType, TPayloadWriteType> 
+	public sealed class SessionMessageInterfaceServiceContext<TPayloadReadType, TPayloadWriteType> : IDisposable 
 		where TPayloadReadType : class
 		where TPayloadWriteType : class
 	{
@@ -31,6 +31,12 @@ namespace GladNet
 		{
 			OutgoingMessageQueue = outgoingMessageQueue ?? throw new ArgumentNullException(nameof(outgoingMessageQueue));
 			MessageInterface = networkMessageInterface ?? throw new ArgumentNullException(nameof(networkMessageInterface));
+		}
+
+		/// <inheritdoc />
+		public void Dispose()
+		{
+			OutgoingMessageQueue.Dispose();
 		}
 	}
 }
